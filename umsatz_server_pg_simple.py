@@ -12,7 +12,15 @@ import psycopg2.extras  # RealDictCursor
 import os
 
 # ── Instanz ────────────────────────────────────────────────────
-mcp = FastMCP("Umsatz-Server-PG")
+mcp = FastMCP(
+    "Umsatz-Server-PG",
+    instructions="""
+        Dieser Server stellt Quartalsumsätze aus der PostgreSQL-Datenbank 
+        finance_db bereit. Verwende get_chart_data um Umsätze abzufragen 
+        und als Balkendiagramm darzustellen.
+    """
+)
+
 
 # ── DB-Verbindung ──────────────────────────────────────────────
 def get_connection():
@@ -55,19 +63,34 @@ def _query_quartalsumsatz(jahr: int) -> list[dict]:
 
 # ── Mapping: DB-Rows → Chart.js dataset ───────────────────────
 def _build_chart_data(rows: list[dict], jahr: int) -> dict:
+    
     return {
+    "type": "bar",
+    "data": {
         "labels": ["Q1", "Q2", "Q3", "Q4"],
         "datasets": [
             {
-                "label":           str(jahr),
-                "data":            [row["umsatz"] for row in rows],
+                "label": f"Quartalsumsatz {jahr}",
+                "data": [row["umsatz"] for row in rows],
                 "backgroundColor": "rgba(59,139,212,0.75)",
-                "borderColor":     "#3B8BD4",
-                "borderWidth":     1,
-                "borderRadius":    4,
+                "borderColor": "#3B8BD4",
+                "borderWidth": 1,
+                "borderRadius": 4
             }
-        ],
+        ]
+    },
+    "options": {
+        "scales": {
+            "y": {
+                "title": {
+                    "display": True,
+                    "text": "Umsatz in €"
+                },
+                "beginAtZero": True
+            }
+        }
     }
+}
 
 # ── MCP Tool ───────────────────────────────────────────────────
 @mcp.tool()
